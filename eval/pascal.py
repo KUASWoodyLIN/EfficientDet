@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-# import keras
+import os
+import tensorflow as tf
 from tensorflow import keras
-
 from eval.common import evaluate
 
 
@@ -33,7 +33,7 @@ class Evaluate(keras.callbacks.Callback):
         score_threshold=0.01,
         max_detections=100,
         save_path=None,
-        tensorboard=None,
+        log_dir='logs',
         weighted_average=False,
         verbose=1
     ):
@@ -55,12 +55,16 @@ class Evaluate(keras.callbacks.Callback):
         self.score_threshold = score_threshold
         self.max_detections = max_detections
         self.save_path = save_path
-        self.tensorboard = tensorboard
+        self.log_dir = log_dir
         self.weighted_average = weighted_average
         self.verbose = verbose
         self.active_model = model
 
         super(Evaluate, self).__init__()
+
+    def on_train_begin(self, logs=None):
+        path = os.path.join(self.log_dir, 'validation')
+        self.writer = tf.summary.create_file_writer(path)
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
@@ -89,13 +93,8 @@ class Evaluate(keras.callbacks.Callback):
         else:
             self.mean_ap = sum(precisions) / sum(x > 0 for x in total_instances)
 
-        if self.tensorboard is not None and self.tensorboard.writer is not None:
-            import tensorflow as tf
-            summary = tf.Summary()
-            summary_value = summary.value.add()
-            summary_value.simple_value = self.mean_ap
-            summary_value.tag = "mAP"
-            self.tensorboard.writer.add_summary(summary, epoch)
+        with self.writer.as_default():
+            tf.summary.scalar("mAP", self.mean_ap, step=epoch)
 
         logs['mAP'] = self.mean_ap
 

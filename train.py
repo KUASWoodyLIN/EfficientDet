@@ -26,7 +26,7 @@ import tensorflow as tf
 # from keras.optimizers import Adam, SGD
 
 from tensorflow import keras
-import tensorflow.keras.backend as K
+# import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 
 from augmentor.color import VisualEffect
@@ -91,10 +91,10 @@ def create_callbacks(training_model, prediction_model, validation_generator, arg
         if args.dataset_type == 'coco':
             from eval.coco import Evaluate
             # use prediction model for evaluation
-            evaluation = Evaluate(validation_generator, prediction_model, tensorboard=tensorboard_callback)
+            evaluation = Evaluate(validation_generator, prediction_model, log_dir=args.tensorboard_dir)
         else:
             from eval.pascal import Evaluate
-            evaluation = Evaluate(validation_generator, prediction_model, tensorboard=tensorboard_callback)
+            evaluation = Evaluate(validation_generator, prediction_model, log_dir=args.tensorboard_dir)
         callbacks.append(evaluation)
 
     # save the model
@@ -272,7 +272,7 @@ def parse_args(args):
     parser.add_argument('--multi-gpu-force', help='Extra flag needed to enable (experimental) multi-gpu support.',
                         action='store_true')
     parser.add_argument('--epochs', help='Number of epochs to train.', type=int, default=50)
-    parser.add_argument('--steps', help='Number of steps per epoch.', type=int, default=10000)
+    # parser.add_argument('--steps', help='Number of steps per epoch.', type=int, default=10000)
     parser.add_argument('--snapshot-path',
                         help='Path to store snapshots of models during training',
                         default='checkpoints/{}'.format(today))
@@ -304,7 +304,7 @@ def main(args=None):
     if args.gpu:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
-    K.set_session(get_session())
+    # K.set_session(get_session())
 
     # create the generators
     train_generator, validation_generator = create_generators(args)
@@ -355,9 +355,11 @@ def main(args=None):
         validation_generator = None
 
     # start training
+    # steps = train_generator.
+    steps = train_generator.size() // args.batch_size
     return model.fit_generator(
         generator=train_generator,
-        steps_per_epoch=args.steps,
+        steps_per_epoch=steps,
         initial_epoch=0,
         epochs=args.epochs,
         verbose=1,

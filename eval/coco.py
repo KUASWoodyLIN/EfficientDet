@@ -117,7 +117,7 @@ class Evaluate(keras.callbacks.Callback):
     """ Performs COCO evaluation on each epoch.
     """
 
-    def __init__(self, generator, model, tensorboard=None, threshold=0.01):
+    def __init__(self, generator, model, log_dir='logs', threshold=0.01):
         """ Evaluate callback initializer.
 
         Args
@@ -129,7 +129,7 @@ class Evaluate(keras.callbacks.Callback):
         self.generator = generator
         self.active_model = model
         self.threshold = threshold
-        self.tensorboard = tensorboard
+        self.log_dir = log_dir
 
         super(Evaluate, self).__init__()
 
@@ -149,13 +149,9 @@ class Evaluate(keras.callbacks.Callback):
                     'AR @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
                     'AR @[ IoU=0.50:0.95 | area= large | maxDets=100 ]']
         coco_eval_stats = evaluate(self.generator, self.active_model, self.threshold)
-        if coco_eval_stats is not None and self.tensorboard is not None and self.tensorboard.writer is not None:
-            summary = tf.Summary()
+        with self.writer.as_default():
             for index, result in enumerate(coco_eval_stats):
-                summary_value = summary.value.add()
-                summary_value.simple_value = result
-                summary_value.tag = '{}. {}'.format(index + 1, coco_tag[index])
-                self.tensorboard.writer.add_summary(summary, epoch)
+                tf.summary.scalar('{}. {}'.format(index + 1, coco_tag[index]), result, step=epoch)
                 logs[coco_tag[index]] = result
 
 

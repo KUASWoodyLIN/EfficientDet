@@ -88,6 +88,7 @@ def _get_detections(generator, model, score_threshold=0.05, max_detections=100, 
         # run network
         boxes, scores, labels = model.predict_on_batch([np.expand_dims(image, axis=0),
                                                         np.expand_dims(anchors, axis=0)])
+        boxes, scores, labels = boxes.numpy(), scores.numpy(), labels.numpy()
         boxes[..., [0, 2]] = boxes[..., [0, 2]] - offset_w
         boxes[..., [1, 3]] = boxes[..., [1, 3]] - offset_h
         boxes /= scale
